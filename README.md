@@ -1,18 +1,15 @@
-# Textonic — Climate Hallucination Analysis + RAG/KG Experiments
+# Textonic — Climate Hallucination Analysis + RAG/KG/Hybrid Implementations
 
-Textonic is a research project focused on **hallucination behavior in Large Language Models (LLMs)** for **climate-related prompts**.  
-It includes:
+Textonic is a research codebase for studying **hallucination behavior in LLMs** on **climate-related prompts**, and experimenting with multiple grounding strategies:
 
-- Baseline vs instruction-tuned response generation (**Qwen** and **LLaMA**) — in `INLP_Project/`
-- Metrics and evaluation notebooks — in `INLP_Project/` and `METRICS/`
-- Additional implementations/experiments:
-  - **RAG pipeline** — `RAG_IMPLEMENTATION/`
-  - **Knowledge Graph (KG) labeling / processing** — `KG_IMPLEMENTATION/`
-  - **Fine-tuning notebook** — `FINETUNE_MODEL_IMPLEMENTATION/`
+- **INLP baselines + instructed generation** (Qwen, LLaMA) + evaluation
+- **RAG implementation** (PDF ingestion → retrieval → reranking → LLM)
+- **KG implementation** (entity/relation extraction + Neo4j/Cypher utilities)
+- **Hybrid implementation** (KG + RAG + reranking, multiple retrieval modes)
 
 ---
 
-## Repository Structure
+## Repository Structure (high-level)
 
 ```text
 .
@@ -42,6 +39,13 @@ It includes:
 │       ├── llm_label.py
 │       ├── Data_preparation/
 │       └── Entity_relation/
+├── HYBRID_IMPLEMENTATION/
+│   ├── requirements.txt
+│   ├── run_llama_modes_first.sh
+│   ├── eval/run_full_dataset.py
+│   └── src/
+│       ├── configs/config.py
+│       └── hybrid/pipeline.py
 └── FINETUNE_MODEL_IMPLEMENTATION/
     └── Fine_Tuning.ipynb
 ```
@@ -50,55 +54,25 @@ It includes:
 
 ## INLP_Project: Baselines, Instruction Tuning, and Evaluation
 
-### Dataset (ground truth prompts)
-Main prompt dataset:
-
-- `INLP_Project/DATASET/climate_hallucination_dataset.json`
-
-### Generate baseline responses
-Runs baseline generation for **Qwen** and **LLaMA**:
+- Prompt dataset: `INLP_Project/DATASET/climate_hallucination_dataset.json`
+- Generate baseline outputs:
 
 ```bash
 python INLP_Project/LLM_baseline.py
 ```
+- Generate instructed outputs:
 
-Outputs (stored in `INLP_Project/DATASET/`):
-
-- `Llama_baseline_dataset.json`
-- `Qwen_baseline_dataset.json`
-
-### Generate instruction-tuned / prompted responses
 ```bash
 python INLP_Project/finetune_llm.py
 ```
-
-Outputs:
-
-- `Llama_instructed_dataset.json`
-- `Qwen_instructed_dataset.json`
-
-### Evaluate results
-Open and run:
-
-- `INLP_Project/Metric_Evaluation.ipynb`
-
-Additional metrics notebook:
-
-- `METRICS/V2_INLP_Project_metrics_all.ipynb`
+- Evaluate:
+  - `INLP_Project/Metric_Evaluation.ipynb`
+  - `METRICS/V2_INLP_Project_metrics_all.ipynb`
 
 ---
 
-## RAG_IMPLEMENTATION: Retrieval-Augmented Generation (RAG)
+## RAG_IMPLEMENTATION (RAG)
 
-This folder contains a RAG pipeline with:
-
-- `main.py` — entry point
-- `src/pdf_processing.py` — PDF ingestion / text extraction
-- `src/retrieval.py` — retrieval logic
-- `src/rerank.py` — reranking step
-- `src/llm.py` — LLM calling wrapper
-
-### Setup & run (RAG)
 ```bash
 cd RAG_IMPLEMENTATION
 pip install -r requirements.txt
@@ -107,40 +81,55 @@ python main.py
 
 ---
 
-## KG_IMPLEMENTATION: Knowledge Graph work
+## KG_IMPLEMENTATION (Knowledge Graph)
 
-This module includes KG-related processing and labeling utilities.
-
-Key script:
-
-- `KG_IMPLEMENTATION/KG_Implementation/llm_label.py` — labeling logic (LLM-assisted)
-
-Supporting folders:
-
-- `KG_IMPLEMENTATION/KG_Implementation/Data_preparation/`
-- `KG_IMPLEMENTATION/KG_Implementation/Entity_relation/`
-- `KG_IMPLEMENTATION/GRAPH/` — graph artifacts
+- Labeling: `KG_IMPLEMENTATION/KG_Implementation/llm_label.py`
+- Entity/relation extraction: `KG_IMPLEMENTATION/KG_Implementation/Entity_relation/`
+- Graph pipeline utilities (Neo4j/Cypher): `KG_IMPLEMENTATION/GRAPH/`
 
 ---
 
-## Fine-tuning Notebook
+## HYBRID_IMPLEMENTATION (KG + RAG Hybrid)
 
-- `FINETUNE_MODEL_IMPLEMENTATION/Fine_Tuning.ipynb` — notebook for fine-tuning experiments
+Hybrid combines KG + text retrieval (RAG) + reranking, and supports retrieval modes:
+- `seq_kg_first`
+- `seq_rag_first`
+- `parallel`
+
+### Run (minimal)
+
+```bash
+cd HYBRID_IMPLEMENTATION
+
+# setup
+conda create -n hybrid_qa python=3.10 -y
+conda activate hybrid_qa
+pip install -r requirements.txt
+
+# required env
+export HF_TOKEN="your_huggingface_token"
+export HF_HUB_ENABLE_HF_TRANSFER=0
+export HF_HUB_DISABLE_XET=1
+export HYBRID_CACHE_ROOT=/tmp/hybrid_cache
+
+# full dataset
+python eval/run_full_dataset.py \
+  --input climate_hallucination_dataset_test_230_v2.json \
+  --model qwen \
+  --retrieval-mode parallel \
+  --use-gpu \
+  --output eval/hybrid_qwen_parallel_full_dataset_answers.json
+
+# batch script (multiple modes)
+bash run_llama_modes_first.sh
+```
+
+Notes:
+- First run may take longer due to model downloads and index/cache creation.
+- If disk quota is tight, add `--allow-tmp-fallback`.
 
 ---
 
-## Tech Stack
+## Fine-tuning
 
-- Python
-- Jupyter Notebooks
-- JSON datasets
-- LLMs (Qwen, LLaMA)
-- RAG components (retrieval + reranking + LLM wrapper)
-- KG utilities (labeling + preparation)
-
----
-
-## Notes
-
-- Some scripts/notebooks may require API keys (for labeling / LLM calls).  
-  If you want, tell me which provider you used (Gemini/OpenAI/HF/etc.) and I’ll add an exact `.env` section + environment variable names.
+- Notebook: `FINETUNE_MODEL_IMPLEMENTATION/Fine_Tuning.ipynb`
