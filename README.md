@@ -1,87 +1,146 @@
-# Project Overview
+# Textonic — Climate Hallucination Analysis + RAG/KG Experiments
 
-This project explores hallucination behavior in Large Language Models (LLMs) for climate-related queries. The goal is to analyze how LLMs generate responses and evaluate the difference between baseline model outputs and instruction-based (fine-tuned) outputs.
+Textonic is a research project focused on **hallucination behavior in Large Language Models (LLMs)** for **climate-related prompts**.  
+It includes:
 
-We use two open-source LLMs as baseline models:
+- Baseline vs instruction-tuned response generation (**Qwen** and **LLaMA**) — in `INLP_Project/`
+- Metrics and evaluation notebooks — in `INLP_Project/` and `METRICS/`
+- Additional implementations/experiments:
+  - **RAG pipeline** — `RAG_IMPLEMENTATION/`
+  - **Knowledge Graph (KG) labeling / processing** — `KG_IMPLEMENTATION/`
+  - **Fine-tuning notebook** — `FINETUNE_MODEL_IMPLEMENTATION/`
 
-1) Qwen
+---
 
-2) LLaMA
+## Repository Structure
 
-Responses from these models are generated using a climate-related dataset and evaluated using multiple metrics to study hallucination patterns in LLM outputs.
+```text
+.
+├── INLP_Project/
+│   ├── LLM_baseline.py
+│   ├── finetune_llm.py
+│   ├── Metric_Evaluation.ipynb
+│   └── DATASET/
+│       ├── climate_hallucination_dataset.json
+│       ├── Llama_baseline_dataset.json
+│       ├── Llama_instructed_dataset.json
+│       ├── Qwen_baseline_dataset.json
+│       └── Qwen_instructed_dataset.json
+├── METRICS/
+│   └── V2_INLP_Project_metrics_all.ipynb
+├── RAG_IMPLEMENTATION/
+│   ├── main.py
+│   ├── requirements.txt
+│   └── src/
+│       ├── llm.py
+│       ├── pdf_processing.py
+│       ├── retrieval.py
+│       └── rerank.py
+├── KG_IMPLEMENTATION/
+│   ├── GRAPH/
+│   └── KG_Implementation/
+│       ├── llm_label.py
+│       ├── Data_preparation/
+│       └── Entity_relation/
+└── FINETUNE_MODEL_IMPLEMENTATION/
+    └── Fine_Tuning.ipynb
+```
 
-These models were used to generate answers for the climate-related prompts in the dataset.
+---
 
-For **hallucination label generation**, we used the **Gemini API** to automatically label whether the generated responses contained hallucinated information.
+## INLP_Project: Baselines, Instruction Tuning, and Evaluation
 
-## Dataset Description
-climate_hallucination_dataset.json
+### Dataset (ground truth prompts)
+Main prompt dataset:
 
-This is the main dataset used in the project.
+- `INLP_Project/DATASET/climate_hallucination_dataset.json`
 
-It contains climate-related prompts designed to analyze hallucination behavior in language model responses.
+### Generate baseline responses
+Runs baseline generation for **Qwen** and **LLaMA**:
 
-## Methodology
-1. Clone the Repository
+```bash
+python INLP_Project/LLM_baseline.py
+```
 
-git clone https://github.com/Jy0810/TexTonic.git
+Outputs (stored in `INLP_Project/DATASET/`):
 
-cd TexTonic_INLP/INLP_Project
+- `Llama_baseline_dataset.json`
+- `Qwen_baseline_dataset.json`
 
-4. Baseline Model Generation
-   
-We first generate responses using baseline LLMs (Qwen and LLaMA) without additional instruction tuning.
+### Generate instruction-tuned / prompted responses
+```bash
+python INLP_Project/finetune_llm.py
+```
 
-Run the script:
+Outputs:
 
-python LLM_baseline.py
+- `Llama_instructed_dataset.json`
+- `Qwen_instructed_dataset.json`
 
-This script generates the following datasets:
+### Evaluate results
+Open and run:
 
-Llama_baseline_dataset.json
+- `INLP_Project/Metric_Evaluation.ipynb`
 
-Qwen_baseline_dataset.json
+Additional metrics notebook:
 
-7. Instruction-Based / Fine-tuned Generation
-   
-Next, we generate responses using instruction-based prompting to observe improvements in response quality and hallucination reduction.
+- `METRICS/V2_INLP_Project_metrics_all.ipynb`
 
-Run the script:
+---
 
-python finetune_llm.py
+## RAG_IMPLEMENTATION: Retrieval-Augmented Generation (RAG)
 
-This generates:
+This folder contains a RAG pipeline with:
 
-Llama_instructed_dataset.json
+- `main.py` — entry point
+- `src/pdf_processing.py` — PDF ingestion / text extraction
+- `src/retrieval.py` — retrieval logic
+- `src/rerank.py` — reranking step
+- `src/llm.py` — LLM calling wrapper
 
-Qwen_instructed_dataset.json
+### Setup & run (RAG)
+```bash
+cd RAG_IMPLEMENTATION
+pip install -r requirements.txt
+python main.py
+```
 
-9. Evaluation
+---
 
-All generated responses are evaluated using multiple metrics to compare:
+## KG_IMPLEMENTATION: Knowledge Graph work
 
-Baseline outputs
+This module includes KG-related processing and labeling utilities.
 
-Instructed outputs
+Key script:
 
-Model performance differences
+- `KG_IMPLEMENTATION/KG_Implementation/llm_label.py` — labeling logic (LLM-assisted)
 
-Evaluation is performed using the notebook:
+Supporting folders:
 
-Metric_Evaluation.ipynb
+- `KG_IMPLEMENTATION/KG_Implementation/Data_preparation/`
+- `KG_IMPLEMENTATION/KG_Implementation/Entity_relation/`
+- `KG_IMPLEMENTATION/GRAPH/` — graph artifacts
 
-This notebook computes evaluation metrics and analyzes hallucination behavior across the different model outputs.
+---
 
-## Technologies Used
+## Fine-tuning Notebook
 
-Python
+- `FINETUNE_MODEL_IMPLEMENTATION/Fine_Tuning.ipynb` — notebook for fine-tuning experiments
 
-Large Language Models (LLMs)
+---
 
-Qwen
+## Tech Stack
 
-LLaMA
+- Python
+- Jupyter Notebooks
+- JSON datasets
+- LLMs (Qwen, LLaMA)
+- RAG components (retrieval + reranking + LLM wrapper)
+- KG utilities (labeling + preparation)
 
-JSON datasets
+---
 
-Jupyter Notebook
+## Notes
+
+- Some scripts/notebooks may require API keys (for labeling / LLM calls).  
+  If you want, tell me which provider you used (Gemini/OpenAI/HF/etc.) and I’ll add an exact `.env` section + environment variable names.
