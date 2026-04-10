@@ -1,0 +1,6 @@
+pdfplumber
+faiss-cpu
+sentence-transformers
+transformers
+torch
+tqdm
